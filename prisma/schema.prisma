@@ -1,0 +1,78 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum AccountType {
+  BANK
+  CASH
+  EWALLET
+  INVESTMENT
+  OTHER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+model Account {
+  id              String        @id @default(uuid())
+  name            String
+  type            AccountType   @default(BANK)
+  initialBalance  Float         @default(0)
+  currentBalance  Float         @default(0)
+  color           String        @default("#3B82F6")
+  icon            String        @default("wallet")
+  accountNumber   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  outgoingTrans   Transaction[] @relation("FromAccount")
+  incomingTrans   Transaction[] @relation("ToAccount")
+}
+
+model Category {
+  id          String        @id @default(uuid())
+  name        String
+  type        CategoryType  @default(EXPENSE)
+  color       String        @default("#EF4444")
+  icon        String        @default("tag")
+  createdAt   DateTime      @default(now())
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id            String          @id @default(uuid())
+  type          TransactionType @default(EXPENSE)
+  amount        Float
+  date          DateTime        @default(now())
+  notes         String?
+  
+  accountId     String
+  account       Account         @relation("FromAccount", fields: [accountId], references: [id], onDelete: Cascade)
+
+  toAccountId   String?
+  toAccount     Account?        @relation("ToAccount", fields: [toAccountId], references: [id], onDelete: SetNull)
+
+  categoryId    String?
+  category      Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([date])
+  @@index([accountId])
+  @@index([type])
+}
