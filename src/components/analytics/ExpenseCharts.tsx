@@ -12,10 +12,11 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { CategoryBreakdown, PeriodFilter, TrendDataPoint } from '@/lib/types';
+import { CategoryBreakdown, FinancialSummary, PeriodFilter, TrendDataPoint } from '@/lib/types';
 import { formatCompactRupiah, formatRupiah } from '@/lib/formatters';
 import { DynamicIcon } from '../ui/IconHelper';
-import { PieChart as PieIcon, BarChart3, Calendar, Sparkles } from 'lucide-react';
+import { PieChart as PieIcon, BarChart3, Calendar, Sparkles, Printer, Download } from 'lucide-react';
+import { openAndPrintReport, downloadReportHtmlFile } from '@/lib/reportGenerator';
 
 interface ExpenseChartsProps {
   trendData: TrendDataPoint[];
@@ -24,6 +25,7 @@ interface ExpenseChartsProps {
   filter: PeriodFilter;
   onFilterChange: (filter: PeriodFilter) => void;
   isPrivacyMode?: boolean;
+  summary?: FinancialSummary;
 }
 
 export function ExpenseCharts({
@@ -33,6 +35,7 @@ export function ExpenseCharts({
   filter,
   onFilterChange,
   isPrivacyMode = false,
+  summary,
 }: ExpenseChartsProps) {
   const filterButtons: { key: PeriodFilter; label: string }[] = [
     { key: 'week', label: '7 Hari' },
@@ -43,7 +46,7 @@ export function ExpenseCharts({
 
   return (
     <div className="space-y-4">
-      {/* Header with Filter Controls */}
+      {/* Header with Filter Controls & Print Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -55,21 +58,46 @@ export function ExpenseCharts({
           </p>
         </div>
 
-        {/* Filter Pills */}
-        <div className="inline-flex rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 p-1 border border-slate-200/60 dark:border-slate-700/50 backdrop-blur-xs">
-          {filterButtons.map((fb) => (
-            <button
-              key={fb.key}
-              onClick={() => onFilterChange(fb.key)}
-              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
-                filter === fb.key
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {fb.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Print & Export HTML Buttons */}
+          {summary && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => openAndPrintReport({ summary, filter })}
+                className="inline-flex items-center gap-1.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-indigo-500/25 transition-all active:scale-95 cursor-pointer"
+                title="Buka laporan format HTML siap cetak / simpan PDF"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                <span>Cetak Laporan (.html)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadReportHtmlFile({ summary, filter })}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-2xs cursor-pointer"
+                title="Unduh berkas .html langsung ke komputer"
+              >
+                <Download className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Filter Pills */}
+          <div className="inline-flex rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 p-1 border border-slate-200/60 dark:border-slate-700/50 backdrop-blur-xs">
+            {filterButtons.map((fb) => (
+              <button
+                key={fb.key}
+                onClick={() => onFilterChange(fb.key)}
+                className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
+                  filter === fb.key
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                {fb.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

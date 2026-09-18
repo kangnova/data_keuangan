@@ -10,7 +10,8 @@ import { TransactionModal } from '@/components/transactions/TransactionModal';
 import { FinancialSummary, PeriodFilter } from '@/lib/types';
 import { getFinancialSummaryAction } from './actions/finance';
 import { formatDateWithDay } from '@/lib/formatters';
-import { Sparkles, Loader2, Wallet, ArrowRight, ShieldCheck, PieChart, ArrowLeftRight } from 'lucide-react';
+import { Sparkles, Loader2, Wallet, ArrowRight, ShieldCheck, PieChart, ArrowLeftRight, Printer, Download } from 'lucide-react';
+import { openAndPrintReport, downloadReportHtmlFile } from '@/lib/reportGenerator';
 
 export default function Home() {
   const [data, setData] = useState<FinancialSummary | null>(null);
@@ -183,6 +184,7 @@ export default function Home() {
                 filter={filter}
                 onFilterChange={handleFilterChange}
                 isPrivacyMode={isPrivacyMode}
+                summary={data}
               />
 
               {/* Transaction History */}
@@ -249,18 +251,39 @@ export default function Home() {
           {/* TAB 4: LAPORAN & ANALITIK */}
           {activeTab === 'analytics' && (
             <div className="space-y-6">
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-700 via-purple-600 to-indigo-800 p-6 text-white shadow-xl shadow-purple-600/20">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-700 via-purple-600 to-indigo-800 p-6 text-white shadow-xl shadow-purple-600/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="relative z-10">
                   <span className="rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-100">
-                    Financial Intelligence
+                    Financial Intelligence & Reporting
                   </span>
                   <h2 className="text-xl sm:text-2xl font-black mt-2">
-                    Laporan Grafik & Proporsi Pengeluaran
+                    Laporan Keuangan & Rekap Mutasi
                   </h2>
                   <p className="mt-1 text-xs text-purple-100/80 max-w-xl">
-                    Evaluasi kebiasaan belanja Anda berdasarkan kategori dan tren mingguan/bulanan agar finansial tetap sehat.
+                    Evaluasi arus kas dan cetak laporan resmi pemasukan & pengeluaran dalam format berkas .html atau cetak langsung ke PDF.
                   </p>
                 </div>
+
+                <div className="relative z-10 flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => openAndPrintReport({ summary: data, filter })}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white text-slate-900 hover:bg-purple-50 px-4 py-2.5 text-xs font-bold shadow-lg shadow-black/10 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <Printer className="h-4 w-4 text-purple-600" />
+                    <span>Cetak Laporan (.html)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadReportHtmlFile({ summary: data, filter })}
+                    className="inline-flex items-center gap-1.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white px-3.5 py-2.5 text-xs font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
+                    title="Unduh Berkas .html"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span className="hidden sm:inline">Unduh .html</span>
+                  </button>
+                </div>
+
                 <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
               </div>
 
@@ -271,6 +294,7 @@ export default function Home() {
                 filter={filter}
                 onFilterChange={handleFilterChange}
                 isPrivacyMode={isPrivacyMode}
+                summary={data}
               />
             </div>
           )}
