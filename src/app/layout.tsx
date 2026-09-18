@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FinansialKu - Pencatatan Keuangan Pribadi",
-  description: "Aplikasi pencatatan keuangan pribadi harian, pelacakan kantong dana, sisa saldo, dan laporan pengeluaran mingguan, bulanan, tahunan.",
+  title: "FinansialKu - Dashboard Keuangan Modern",
+  description: "Aplikasi pencatatan keuangan pribadi modern, pelacakan kantong dana, sisa saldo, dan laporan analitik pengeluaran.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -39,9 +39,27 @@ export default function RootLayout({
   return (
     <html
       lang="id"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 dark:bg-zinc-950 font-sans">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const storedTheme = localStorage.getItem('finansialku-theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
         {children}
       </body>
     </html>

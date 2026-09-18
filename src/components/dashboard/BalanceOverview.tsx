@@ -2,7 +2,18 @@
 
 import React from 'react';
 import { formatRupiah } from '@/lib/formatters';
-import { TrendingDown, TrendingUp, Wallet, ArrowDownRight, ArrowUpRight, Scale } from 'lucide-react';
+import {
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+  ArrowDownRight,
+  ArrowUpRight,
+  Scale,
+  Eye,
+  EyeOff,
+  Sparkles,
+  ShieldCheck,
+} from 'lucide-react';
 import { PeriodFilter } from '@/lib/types';
 
 interface BalanceOverviewProps {
@@ -11,6 +22,8 @@ interface BalanceOverviewProps {
   periodExpense: number;
   netCashflow: number;
   filter: PeriodFilter;
+  isPrivacyMode?: boolean;
+  onTogglePrivacyMode?: () => void;
 }
 
 export function BalanceOverview({
@@ -19,103 +32,186 @@ export function BalanceOverview({
   periodExpense,
   netCashflow,
   filter,
+  isPrivacyMode = false,
+  onTogglePrivacyMode,
 }: BalanceOverviewProps) {
   const filterLabelMap: Record<PeriodFilter, string> = {
     week: 'Minggu Ini',
     month: 'Bulan Ini',
     year: 'Tahun Ini',
-    all: 'Semua Periode',
+    all: 'Semua Waktu',
   };
 
+  const renderValue = (val: number, prefix: string = '') => {
+    if (isPrivacyMode) {
+      return 'Rp ••••••••';
+    }
+    return `${prefix}${formatRupiah(val)}`;
+  };
+
+  const savingsRate = periodIncome > 0 ? Math.round(((periodIncome - periodExpense) / periodIncome) * 100) : 0;
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Total Sisa Uang / Net Worth */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-800 p-5 text-white shadow-lg shadow-indigo-500/20">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium uppercase tracking-wider text-indigo-200">
-            Sisa Total Uang (Net Worth)
-          </span>
-          <div className="rounded-xl bg-white/20 p-2 backdrop-blur-md">
-            <Wallet className="h-5 w-5 text-white" />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ================= KARTU 1: ELITE DIGITAL CARD (NET WORTH) ================= */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1e1b4b] via-[#312e81] to-[#0f172a] p-6 text-white shadow-xl shadow-indigo-950/20 border border-indigo-500/20 flex flex-col justify-between min-h-[190px] group transition-all duration-300 hover:shadow-indigo-500/20 hover:-translate-y-0.5">
+        {/* Background Holographic Glow Circles */}
+        <div className="absolute -top-12 -right-12 h-36 w-36 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-blue-500/15 blur-2xl pointer-events-none" />
+        
+        {/* Top Header Card */}
+        <div className="relative z-10 flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">
+                Total Kekayaan Bersih
+              </span>
+              <span className="rounded bg-indigo-400/20 px-1.5 py-0.5 text-[9px] font-semibold text-indigo-200">
+                PLATINUM
+              </span>
+            </div>
+            <p className="text-[11px] text-indigo-200/70 mt-0.5">Akumulasi Seluruh Kantong</p>
           </div>
-        </div>
-        <div className="mt-4">
-          <div className="text-2xl sm:text-3xl font-bold tracking-tight">
-            {formatRupiah(totalNetWorth)}
-          </div>
-          <p className="mt-1 text-xs text-indigo-200">
-            Saldo akumulasi dari seluruh kantong dana
-          </p>
-        </div>
-        <div className="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/10 blur-xl pointer-events-none" />
-      </div>
 
-      {/* Pemasukan Periode Ini */}
-      <div className="rounded-2xl border border-emerald-100 dark:border-emerald-950/40 bg-white dark:bg-zinc-900 p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Pemasukan ({filterLabelMap[filter]})
-          </span>
-          <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/50 p-2 text-emerald-600 dark:text-emerald-400">
-            <ArrowDownRight className="h-5 w-5" />
-          </div>
+          {/* Eye privacy toggle on card */}
+          {onTogglePrivacyMode && (
+            <button
+              onClick={onTogglePrivacyMode}
+              className="rounded-xl bg-white/10 p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition-colors"
+              title={isPrivacyMode ? 'Buka Sensor Saldo' : 'Sensor Saldo'}
+            >
+              {isPrivacyMode ? <EyeOff className="h-4 w-4 text-amber-400" /> : <Eye className="h-4 w-4" />}
+            </button>
+          )}
         </div>
-        <div className="mt-4">
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-            +{formatRupiah(periodIncome)}
-          </div>
-          <div className="mt-1 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span>Dana masuk tercatat</span>
-          </div>
-        </div>
-      </div>
 
-      {/* Pengeluaran Periode Ini */}
-      <div className="rounded-2xl border border-rose-100 dark:border-rose-950/40 bg-white dark:bg-zinc-900 p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Pengeluaran ({filterLabelMap[filter]})
-          </span>
-          <div className="rounded-xl bg-rose-50 dark:bg-rose-950/50 p-2 text-rose-600 dark:text-rose-400">
-            <ArrowUpRight className="h-5 w-5" />
+        {/* Center: Saldo Net Worth */}
+        <div className="relative z-10 my-3">
+          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight drop-shadow-sm font-mono">
+            {renderValue(totalNetWorth)}
           </div>
         </div>
-        <div className="mt-4">
-          <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">
-            -{formatRupiah(periodExpense)}
+
+        {/* Bottom Card: Realistic Chip & Cardholder */}
+        <div className="relative z-10 flex items-end justify-between pt-2 border-t border-white/10 text-xs text-indigo-200/90">
+          <div className="flex items-center gap-2">
+            {/* Realistic Golden Microchip */}
+            <div className="w-7 h-5 rounded bg-gradient-to-tr from-amber-400 via-yellow-200 to-amber-500 border border-amber-300/60 flex items-center justify-center shadow-xs">
+              <div className="w-5 h-3 border border-amber-700/30 rounded-xs" />
+            </div>
+            <span className="font-mono text-[11px] tracking-widest text-slate-300">
+              •••• 8821
+            </span>
           </div>
-          <div className="mt-1 flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400">
-            <TrendingDown className="h-3.5 w-3.5" />
-            <span>Uang yang dibelanjakan</span>
-          </div>
+          <span className="font-bold tracking-wider text-[10px] uppercase text-white/90">
+            NOVA SUHARYANTO
+          </span>
         </div>
       </div>
 
-      {/* Sisa Arus Kas Bersih */}
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
+      {/* ================= KARTU 2: PEMASUKAN ================= */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-5 shadow-sm backdrop-blur-md flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-900">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Arus Kas Bersih ({filterLabelMap[filter]})
-          </span>
-          <div className="rounded-xl bg-zinc-100 dark:bg-zinc-800 p-2 text-zinc-700 dark:text-zinc-300">
-            <Scale className="h-5 w-5" />
+          <div>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Pemasukan
+            </span>
+            <span className="ml-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full">
+              {filterLabelMap[filter]}
+            </span>
+          </div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400">
+            <ArrowDownRight className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-4">
+
+        <div className="my-3">
+          <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono">
+            {renderValue(periodIncome, '+')}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+          <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            Total dana masuk periode ini
+          </span>
+        </div>
+      </div>
+
+      {/* ================= KARTU 3: PENGELUARAN ================= */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-5 shadow-sm backdrop-blur-md flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:border-rose-200 dark:hover:border-rose-900">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Pengeluaran
+            </span>
+            <span className="ml-1 text-[10px] font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded-full">
+              {filterLabelMap[filter]}
+            </span>
+          </div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400">
+            <ArrowUpRight className="h-4 w-4" />
+          </div>
+        </div>
+
+        <div className="my-3">
+          <div className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight font-mono">
+            {renderValue(periodExpense, '-')}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+          <TrendingDown className="h-3.5 w-3.5 shrink-0" />
+          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            Total dana dibelanjakan
+          </span>
+        </div>
+      </div>
+
+      {/* ================= KARTU 4: ARUS KAS BERSIH ================= */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-5 shadow-sm backdrop-blur-md flex flex-col justify-between transition-all duration-300 hover:shadow-md">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Arus Kas Bersih
+            </span>
+            <span className="ml-1 text-[10px] font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded-full">
+              {filterLabelMap[filter]}
+            </span>
+          </div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+            <Scale className="h-4 w-4" />
+          </div>
+        </div>
+
+        <div className="my-3">
           <div
-            className={`text-2xl font-bold ${
+            className={`text-xl sm:text-2xl font-black tracking-tight font-mono ${
               netCashflow >= 0
                 ? 'text-blue-600 dark:text-blue-400'
                 : 'text-amber-600 dark:text-amber-400'
             }`}
           >
-            {netCashflow >= 0 ? '+' : ''}
-            {formatRupiah(netCashflow)}
+            {renderValue(netCashflow, netCashflow > 0 ? '+' : '')}
           </div>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            {netCashflow >= 0 ? 'Surplus (Pemasukan > Pengeluaran)' : 'Defisit pada periode ini'}
-          </p>
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              netCashflow >= 0
+                ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400'
+                : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
+            }`}
+          >
+            {netCashflow >= 0 ? 'Surplus (Hemat)' : 'Defisit (Boros)'}
+          </span>
+          {periodIncome > 0 && (
+            <span className="text-[10px] text-slate-400 font-medium">
+              Simpan: {savingsRate}%
+            </span>
+          )}
         </div>
       </div>
     </div>
