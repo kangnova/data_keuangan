@@ -4,8 +4,24 @@ import React, { useState } from 'react';
 import { Account, AccountType } from '@/lib/types';
 import { formatRupiah } from '@/lib/formatters';
 import { DynamicIcon } from '../ui/IconHelper';
-import { Plus, CreditCard, Sparkles, X, Layers, Landmark } from 'lucide-react';
-import { createAccountAction } from '@/app/actions/finance';
+import {
+  Plus,
+  CreditCard,
+  Sparkles,
+  X,
+  Layers,
+  Landmark,
+  Pencil,
+  Trash2,
+  RotateCcw,
+  AlertTriangle,
+} from 'lucide-react';
+import {
+  createAccountAction,
+  updateAccountAction,
+  deleteAccountAction,
+  resetFinancialDataAction,
+} from '@/app/actions/finance';
 
 interface AccountCardListProps {
   accounts: Account[];
@@ -35,11 +51,26 @@ const PRESET_ACCOUNTS = [
 
 export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: AccountCardListProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     name: '',
     type: 'BANK' as AccountType,
     initialBalance: '',
+    color: '#4f46e5',
+    icon: 'building-2',
+    accountNumber: '',
+  });
+
+  const [editFormData, setEditFormData] = useState({
+    id: '',
+    name: '',
+    type: 'BANK' as AccountType,
+    currentBalance: '',
     color: '#4f46e5',
     icon: 'building-2',
     accountNumber: '',
@@ -87,10 +118,77 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
     }
   };
 
+  const handleOpenEdit = (acc: Account) => {
+    setEditFormData({
+      id: acc.id,
+      name: acc.name,
+      type: acc.type,
+      currentBalance: acc.currentBalance.toString(),
+      color: acc.color,
+      icon: acc.icon,
+      accountNumber: acc.accountNumber || '',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFormData.name || !editFormData.id) return;
+    setIsSubmitting(true);
+    try {
+      await updateAccountAction(editFormData.id, {
+        name: editFormData.name,
+        type: editFormData.type,
+        currentBalance: parseFloat(editFormData.currentBalance) || 0,
+        color: editFormData.color,
+        icon: editFormData.icon,
+        accountNumber: editFormData.accountNumber || undefined,
+      });
+      setIsEditModalOpen(false);
+      onRefresh();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAccount = async (acc: Account) => {
+    const ok = window.confirm(
+      `Apakah Anda yakin ingin menghapus kantong "${acc.name}"? Saldo dan transaksi yang berkaitan dengan kantong ini akan dihapus.`
+    );
+    if (!ok) return;
+
+    setDeletingId(acc.id);
+    try {
+      await deleteAccountAction(acc.id);
+      onRefresh();
+    } catch (err) {
+      console.error('Failed to delete account:', err);
+      alert('Gagal menghapus kantong dana.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleResetAllData = async () => {
+    setIsResetting(true);
+    try {
+      await resetFinancialDataAction();
+      setIsResetConfirmOpen(false);
+      onRefresh();
+    } catch (err) {
+      console.error('Failed to reset financial data:', err);
+      alert('Gagal mereset data keuangan.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {/* Header bar */}
-      <div className="flex items-center justify-between">
+      {/* Header bar with Add and Reset Buttons */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Landmark className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
@@ -100,16 +198,31 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
             Sebaran dana di {accounts.length} rekening, dompet fisik, & e-wallet
           </p>
         </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 border border-indigo-200/60 dark:border-indigo-800/60 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 transition-all active:scale-95"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>Tambah Kantong</span>
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* Reset All Data Button */}
+          <button
+            type="button"
+            onClick={() => setIsResetConfirmOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200/60 dark:border-rose-800/60 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 transition-all active:scale-95 cursor-pointer"
+            title="Nol-kan semua saldo dan hapus seluruh riwayat transaksi"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset Data (0-kan Semua)</span>
+          </button>
+
+          {/* Add Account Button */}
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 border border-indigo-200/60 dark:border-indigo-800/60 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 transition-all active:scale-95 cursor-pointer"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>Tambah Kantong</span>
+          </button>
+        </div>
       </div>
 
-      {/* Cards Grid: Scrollable on mobile, responsive grid on desktop */}
+      {/* Cards Grid */}
       <div className="flex gap-4 overflow-x-auto pb-3 pt-1 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:overflow-visible scrollbar-none">
         {accounts.map((acc) => {
           const percentage = totalBalance > 0 ? Math.max(0, Math.min(100, Math.round((acc.currentBalance / totalBalance) * 100))) : 0;
@@ -119,7 +232,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
               className="group relative flex-shrink-0 w-[260px] sm:w-auto rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 backdrop-blur-md flex flex-col justify-between"
             >
               <div>
-                {/* Header card: Icon + Type Badge */}
+                {/* Header card: Icon + Action Buttons (Edit/Delete) + Type Badge */}
                 <div className="flex items-start justify-between">
                   <div
                     className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-md transition-transform group-hover:scale-105"
@@ -127,13 +240,37 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                   >
                     <DynamicIcon name={acc.icon} className="h-5 w-5" />
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="rounded-lg bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                      {TYPE_LABELS[acc.type] || acc.type}
-                    </span>
-                    <span className="text-[10px] font-medium text-slate-400 font-mono">
-                      {percentage}% dari total
-                    </span>
+
+                  <div className="flex flex-col items-end gap-1.5">
+                    {/* Action buttons (Edit & Delete) */}
+                    <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(acc)}
+                        className="rounded-lg p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition-colors"
+                        title="Edit Kantong Dana"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deletingId === acc.id}
+                        onClick={() => handleDeleteAccount(acc)}
+                        className="rounded-lg p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors disabled:opacity-50"
+                        title="Hapus Kantong Dana"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <span className="rounded-lg bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                        {TYPE_LABELS[acc.type] || acc.type}
+                      </span>
+                      <span className="text-[10px] font-medium text-slate-400 font-mono">
+                        {percentage}%
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -173,7 +310,137 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
         })}
       </div>
 
-      {/* Modal Tambah Akun */}
+      {/* ================= MODAL EDIT KANTONG DANA ================= */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400">
+                  <Pencil className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                    Edit Kantong Dana
+                  </h3>
+                  <p className="text-[11px] text-slate-400">Sesuaikan nama, saldo, atau warna kantong</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateAccount} className="mt-4 space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Nama Akun / Dompet
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Misal: Bank BCA, Dompet Tunai..."
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Tipe Kantong
+                  </label>
+                  <select
+                    value={editFormData.type}
+                    onChange={(e) => {
+                      const t = e.target.value as AccountType;
+                      let icon = 'wallet';
+                      if (t === 'BANK') icon = 'building-2';
+                      if (t === 'EWALLET') icon = 'smartphone';
+                      if (t === 'INVESTMENT') icon = 'trending-up';
+                      setEditFormData({ ...editFormData, type: t, icon });
+                    }}
+                    className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="BANK">Rekening Bank</option>
+                    <option value="CASH">Dompet Tunai</option>
+                    <option value="EWALLET">E-Wallet (GoPay/OVO)</option>
+                    <option value="INVESTMENT">Investasi (Reksadana/Saham)</option>
+                    <option value="OTHER">Lainnya</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Warna Label
+                  </label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={editFormData.color}
+                      onChange={(e) => setEditFormData({ ...editFormData, color: e.target.value })}
+                      className="h-8 w-10 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent p-0"
+                    />
+                    <span className="font-mono text-xs text-slate-500">{editFormData.color}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Nomor Rekening / Catatan Nomor (Opsional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Misal: 5410xxxx (atau nomor HP e-wallet)"
+                  value={editFormData.accountNumber}
+                  onChange={(e) => setEditFormData({ ...editFormData, accountNumber: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Saldo Saat Ini (Rp)
+                </label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={editFormData.currentBalance}
+                  onChange={(e) => setEditFormData({ ...editFormData, currentBalance: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="mt-1 text-[10px] text-slate-400">
+                  Ubah nominal ini jika ingin menyesuaikan total saldo aktual kantong Anda.
+                </p>
+              </div>
+
+              <div className="mt-5 flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 transition-all disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Menyimpan...' : 'Perbarui Kantong'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL TAMBAH KANTONG DANA ================= */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
           <div className="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
@@ -315,6 +582,56 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL KONFIRMASI RESET SELURUH DATA ================= */}
+      {isResetConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-rose-200 dark:border-rose-900/50 animate-in zoom-in-95">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800/60">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  Reset Data Keuangan?
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Tindakan ini akan mengosongkan seluruh histori
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40 p-4 text-xs text-rose-900 dark:text-rose-200 space-y-2">
+              <p className="font-semibold">Perhatian:</p>
+              <ul className="list-disc pl-4 space-y-1 text-slate-600 dark:text-slate-300">
+                <li>Seluruh riwayat mutasi transaksi akan dihapus bersih (0 transaksi).</li>
+                <li>Semua saldo kantong dana akan diatur ulang menjadi <strong>Rp 0</strong>.</li>
+                <li>Daftar kantong dan kategori Anda tetap dipertahankan agar siap diisi transaksi baru Anda.</li>
+              </ul>
+            </div>
+
+            <div className="mt-6 flex gap-2">
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={() => setIsResetConfirmOpen(false)}
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={handleResetAllData}
+                className="flex-1 rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-bold text-white shadow-md shadow-rose-600/25 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className={`h-3.5 w-3.5 ${isResetting ? 'animate-spin' : ''}`} />
+                <span>{isResetting ? 'Mereset Data...' : 'Ya, Reset ke Rp 0'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

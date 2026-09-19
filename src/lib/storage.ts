@@ -183,8 +183,9 @@ if (!globalStore.mockTransactions) globalStore.mockTransactions = [...DEFAULT_TR
 async function ensurePostgresSeeded() {
   if (globalStore.hasSeededPostgres) return;
   try {
+    const catCount = await prisma.category.count();
     const accCount = await prisma.account.count();
-    if (accCount === 0) {
+    if (catCount === 0 && accCount === 0) {
       for (const a of DEFAULT_ACCOUNTS) {
         await prisma.account.create({
           data: {
@@ -588,3 +589,108 @@ export async function deleteTransaction(id: string) {
   }
   return true;
 }
+
+export async function updateAccount(
+  id: string,
+  data: {
+    name?: string;
+    type?: string;
+    currentBalance?: number;
+    initialBalance?: number;
+    color?: string;
+    icon?: string;
+    accountNumber?: string | null;
+  }
+) {
+  const isDbConnected = await checkPostgresConnection();
+  if (isDbConnected) {
+    try {
+      return await prisma.account.update({
+        where: { id },
+        data: {
+          ...(data.name && { name: data.name }),
+          ...(data.type && { type: data.type as any }),
+          ...(data.currentBalance !== undefined && { currentBalance: data.currentBalance }),
+          ...(data.initialBalance !== undefined && { initialBalance: data.initialBalance }),
+          ...(data.color && { color: data.color }),
+          ...(data.icon && { icon: data.icon }),
+          ...(data.accountNumber !== undefined && { accountNumber: data.accountNumber }),
+        },
+      });
+    } catch (err) {
+      console.error('Failed to update account in PostgreSQL:', err);
+    }
+  }
+
+  // Fallback in-memory
+  const acc = globalStore.mockAccounts?.find((a) => a.id === id);
+  if (acc) {
+    if (data.name) acc.name = data.name;
+    if (data.type) acc.type = data.type as any;
+    if (data.currentBalance !== undefined) acc.currentBalance = data.currentBalance;
+    if (data.initialBalance !== undefined) acc.initialBalance = data.initialBalance;
+    if (data.color) acc.color = data.color;
+    if (data.icon) acc.icon = data.icon;
+    if (data.accountNumber !== undefined) acc.accountNumber = data.accountNumber;
+  }
+  return acc;
+}
+
+export async function deleteAccount(id: string) {
+  const isDbConnected = await checkPostgresConnection();
+  if (isDbConnected) {
+    try {
+      return await prisma.account.delete({
+        where: { id },
+      });
+    } catch (err) {
+      console.error('Failed to delete account in PostgreSQL:', err);
+      throw err;
+    }
+  }
+
+  // Fallback in-memory
+  const idx = globalStore.mockAccounts?.findIndex((a) => a.id === id);
+  if (idx !== undefined && idx !== -1) {
+    globalStore.mockAccounts?.splice(idx, 1);
+    if (globalStore.mockTransactions) {
+      globalStore.mockTransactions = globalStore.mockTransactions.filter(
+        (t) => t.accountId !== id && t.toAccountId !== id
+      );
+    }
+  }
+  return true;
+}
+
+export async function resetFinancialData() {
+  const isDbConnected = await checkPostgresConnection();
+  if (isDbConnected) {
+    try {
+      // 1. Delete all transactions
+      await prisma.transaction.deleteMany();
+      // 2. Reset all account balances to 0
+      await prisma.account.updateMany({
+        data: {
+          currentBalance: 0,
+          initialBalance: 0,
+        },
+      });
+      globalStore.hasSeededPostgres = true;
+      return true;
+    } catch (err) {
+      console.error('Failed to reset financial data in PostgreSQL:', err);
+      throw err;
+    }
+  }
+
+  // Fallback in-memory
+  globalStore.mockTransactions = [];
+  if (globalStore.mockAccounts) {
+    globalStore.mockAccounts.forEach((acc) => {
+      acc.currentBalance = 0;
+      acc.initialBalance = 0;
+    });
+  }
+  return true;
+}
+
