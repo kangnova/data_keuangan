@@ -15,6 +15,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { PeriodFilter } from '@/lib/types';
+import { Language, translations } from '@/lib/i18n';
 
 interface BalanceOverviewProps {
   totalNetWorth: number;
@@ -24,6 +25,8 @@ interface BalanceOverviewProps {
   filter: PeriodFilter;
   isPrivacyMode?: boolean;
   onTogglePrivacyMode?: () => void;
+  language?: Language;
+  ownerName?: string;
 }
 
 export function BalanceOverview({
@@ -34,12 +37,16 @@ export function BalanceOverview({
   filter,
   isPrivacyMode = false,
   onTogglePrivacyMode,
+  language = 'id',
+  ownerName = 'Nova Suharyanto',
 }: BalanceOverviewProps) {
+  const t = translations[language];
+
   const filterLabelMap: Record<PeriodFilter, string> = {
-    week: 'Minggu Ini',
-    month: 'Bulan Ini',
-    year: 'Tahun Ini',
-    all: 'Semua Waktu',
+    week: t.filter7Days,
+    month: t.filterMonth,
+    year: t.filterYear,
+    all: t.filterAll,
   };
 
   const renderValue = (val: number, prefix: string = '') => {
@@ -64,21 +71,21 @@ export function BalanceOverview({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">
-                Total Kekayaan Bersih
+                {t.netWorth}
               </span>
               <span className="rounded bg-indigo-400/20 px-1.5 py-0.5 text-[9px] font-semibold text-indigo-200">
                 PLATINUM
               </span>
             </div>
-            <p className="text-[11px] text-indigo-200/70 mt-0.5">Akumulasi Seluruh Kantong</p>
+            <p className="text-[11px] text-indigo-200/70 mt-0.5">{t.totalAssets}</p>
           </div>
 
           {/* Eye privacy toggle on card */}
           {onTogglePrivacyMode && (
             <button
               onClick={onTogglePrivacyMode}
-              className="rounded-xl bg-white/10 p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition-colors"
-              title={isPrivacyMode ? 'Buka Sensor Saldo' : 'Sensor Saldo'}
+              className="rounded-xl bg-white/10 p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition-colors cursor-pointer"
+              title={isPrivacyMode ? t.privacyActive : t.privacySensor}
             >
               {isPrivacyMode ? <EyeOff className="h-4 w-4 text-amber-400" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -103,8 +110,8 @@ export function BalanceOverview({
               •••• 8821
             </span>
           </div>
-          <span className="font-bold tracking-wider text-[10px] uppercase text-white/90">
-            NOVA SUHARYANTO
+          <span className="font-bold tracking-wider text-[10px] uppercase text-white/90 truncate max-w-[150px]">
+            {ownerName.toUpperCase()}
           </span>
         </div>
       </div>
@@ -114,7 +121,7 @@ export function BalanceOverview({
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Pemasukan
+              {t.periodIncome}
             </span>
             <span className="ml-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full">
               {filterLabelMap[filter]}
@@ -134,7 +141,7 @@ export function BalanceOverview({
         <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 pt-2 border-t border-slate-100 dark:border-slate-800/80">
           <TrendingUp className="h-3.5 w-3.5 shrink-0" />
           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-            Total dana masuk periode ini
+            {language === 'id' ? 'Total dana masuk periode ini' : 'Total incoming funds in this period'}
           </span>
         </div>
       </div>
@@ -144,7 +151,7 @@ export function BalanceOverview({
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Pengeluaran
+              {t.periodExpense}
             </span>
             <span className="ml-1 text-[10px] font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded-full">
               {filterLabelMap[filter]}
@@ -164,7 +171,7 @@ export function BalanceOverview({
         <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 pt-2 border-t border-slate-100 dark:border-slate-800/80">
           <TrendingDown className="h-3.5 w-3.5 shrink-0" />
           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-            Total dana dibelanjakan
+            {language === 'id' ? 'Total dana dibelanjakan' : 'Total funds spent in this period'}
           </span>
         </div>
       </div>
@@ -174,7 +181,7 @@ export function BalanceOverview({
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Arus Kas Bersih
+              {t.netCashflow}
             </span>
             <span className="ml-1 text-[10px] font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded-full">
               {filterLabelMap[filter]}
@@ -205,11 +212,11 @@ export function BalanceOverview({
                 : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
             }`}
           >
-            {netCashflow >= 0 ? 'Surplus (Hemat)' : 'Defisit (Boros)'}
+            {netCashflow >= 0 ? `${t.surplus} (${language === 'id' ? 'Hemat' : 'Saved'})` : `${t.deficit} (${language === 'id' ? 'Boros' : 'Overspent'})`}
           </span>
           {periodIncome > 0 && (
             <span className="text-[10px] text-slate-400 font-medium">
-              Simpan: {savingsRate}%
+              {language === 'id' ? 'Simpan' : 'Saved'}: {savingsRate}%
             </span>
           )}
         </div>

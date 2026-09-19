@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState } from 'react';
 import {
   LayoutDashboard,
   Wallet,
@@ -14,7 +14,11 @@ import {
   Moon,
   Sparkles,
   User,
+  Settings,
+  Globe,
 } from 'lucide-react';
+import { Language, translations } from '@/lib/i18n';
+import { SettingsModal } from './SettingsModal';
 
 interface AppShellProps {
   children: ReactNode;
@@ -26,6 +30,12 @@ interface AppShellProps {
   onTogglePrivacyMode: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  language: Language;
+  onSelectLanguage: (lang: Language) => void;
+  onToggleLanguage: () => void;
+  ownerName: string;
+  ownerUsername: string;
+  onSaveOwnerName: (name: string, username: string) => void;
 }
 
 export function AppShell({
@@ -38,13 +48,32 @@ export function AppShell({
   onTogglePrivacyMode,
   theme,
   onToggleTheme,
+  language,
+  onSelectLanguage,
+  onToggleLanguage,
+  ownerName,
+  ownerUsername,
+  onSaveOwnerName,
 }: AppShellProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const t = translations[language];
+
   const navItems = [
-    { id: 'dashboard', label: 'Ringkasan', icon: LayoutDashboard },
-    { id: 'accounts', label: 'Kantong Dana', icon: Wallet },
-    { id: 'transactions', label: 'Transaksi', icon: ArrowLeftRight },
-    { id: 'analytics', label: 'Laporan', icon: PieChart },
+    { id: 'dashboard', label: t.dashboard, icon: LayoutDashboard },
+    { id: 'accounts', label: t.accounts, icon: Wallet },
+    { id: 'transactions', label: t.transactions, icon: ArrowLeftRight },
+    { id: 'analytics', label: t.analytics, icon: PieChart },
   ];
+
+  const initials = ownerName
+    ? ownerName
+        .split(' ')
+        .filter(Boolean)
+        .map((w) => w[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : 'NS';
 
   return (
     <div className="min-h-screen bg-slate-50/70 dark:bg-[#080d1a] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row antialiased transition-colors duration-300">
@@ -60,14 +89,14 @@ export function AppShell({
             <div>
               <div className="flex items-center gap-1.5">
                 <h1 className="font-extrabold tracking-tight text-base text-slate-900 dark:text-white">
-                  FinansialKu
+                  {t.appName}
                 </h1>
                 <span className="rounded-md bg-indigo-50 dark:bg-indigo-950/80 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600 dark:text-indigo-400">
                   PRO
                 </span>
               </div>
               <span className="text-[10px] font-medium text-slate-400 dark:text-slate-400 tracking-wider">
-                Personal Wealth Hub
+                {t.appSubtitle}
               </span>
             </div>
           </div>
@@ -76,20 +105,20 @@ export function AppShell({
           <div className="mt-5">
             <button
               onClick={onOpenTransactionModal}
-              className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-600 py-3 px-4 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
+              className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-600 py-3 px-4 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer"
             >
               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-white/20">
                 <Plus className="h-3.5 w-3.5 text-white" />
               </div>
-              <span>Catat Transaksi</span>
+              <span>{t.newTransaction}</span>
             </button>
           </div>
 
           {/* Navigation Links */}
           <nav className="mt-6 flex-1 space-y-1">
             <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400">
-              Menu Utama
+              {t.menuTitle}
             </div>
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -98,7 +127,7 @@ export function AppShell({
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 ${
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer ${
                     isActive
                       ? 'bg-gradient-to-r from-indigo-50 to-blue-50/50 dark:from-indigo-950/60 dark:to-blue-950/40 text-indigo-600 dark:text-indigo-400 font-bold shadow-xs border border-indigo-100/50 dark:border-indigo-800/40'
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
@@ -111,7 +140,7 @@ export function AppShell({
                   />
                   <span>{item.label}</span>
                   {isActive && (
-                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 animate-pulse" />
+                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-600 dark:text-indigo-400 animate-pulse" />
                   )}
                 </button>
               );
@@ -139,27 +168,33 @@ export function AppShell({
                     }`}
                   />
                   <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
-                    {isDbConnected ? 'PostgreSQL Aktif' : 'Mode Offline / Mock'}
+                    {isDbConnected ? t.databaseActive : t.databaseOffline}
                   </p>
                 </div>
                 <p className="text-[9px] text-slate-400 truncate">
-                  {isDbConnected ? 'Tersimpan ke database' : 'Data di memori browser'}
+                  {isDbConnected ? 'Supabase PostgreSQL' : 'Fallback in-memory'}
                 </p>
               </div>
             </div>
 
-            {/* Profile badge */}
-            <div className="flex items-center gap-2.5 px-2 py-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-slate-700 to-indigo-600 text-white text-xs font-bold shadow-xs">
-                NS
+            {/* Profile badge (Clickable to open Settings Modal) */}
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="w-full flex items-center gap-2.5 p-2 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-slate-800/70 transition-all text-left group cursor-pointer border border-transparent hover:border-slate-200/70 dark:hover:border-slate-700/50"
+              title={t.profileSettings}
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-slate-700 to-indigo-600 text-white text-xs font-bold shadow-xs group-hover:scale-105 transition-transform">
+                {initials}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                  Nova Suharyanto
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  {ownerName}
                 </p>
-                <p className="text-[10px] text-slate-400 truncate">kangnova</p>
+                <p className="text-[10px] text-slate-400 truncate font-mono">@{ownerUsername}</p>
               </div>
-            </div>
+              <Settings className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+            </button>
           </div>
         </div>
       </aside>
@@ -176,6 +211,15 @@ export function AppShell({
         </div>
 
         <div className="flex items-center gap-1.5">
+          {/* Language Switcher */}
+          <button
+            onClick={onToggleLanguage}
+            title={language === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'}
+            className="flex items-center gap-1 px-2 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
+          >
+            <span>{language === 'id' ? '🇮🇩 ID' : '🇬🇧 EN'}</span>
+          </button>
+
           {/* Privacy Toggle */}
           <button
             onClick={onTogglePrivacyMode}
@@ -193,6 +237,14 @@ export function AppShell({
           >
             {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
           </button>
+
+          {/* Settings / Profile button */}
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-600 text-white text-[10px] font-bold shadow-xs"
+          >
+            {initials}
+          </button>
         </div>
       </header>
 
@@ -208,10 +260,20 @@ export function AppShell({
           </div>
 
           <div className="flex items-center gap-2.5">
+            {/* Language Switcher Button */}
+            <button
+              onClick={onToggleLanguage}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition-all shadow-2xs cursor-pointer"
+              title={language === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'}
+            >
+              <Globe className="h-3.5 w-3.5 text-indigo-500" />
+              <span>{language === 'id' ? '🇮🇩 Bahasa' : '🇬🇧 English'}</span>
+            </button>
+
             {/* Privacy Mode Button */}
             <button
               onClick={onTogglePrivacyMode}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                 isPrivacyMode
                   ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
@@ -220,12 +282,12 @@ export function AppShell({
               {isPrivacyMode ? (
                 <>
                   <EyeOff className="h-3.5 w-3.5 text-amber-500" />
-                  <span>Saldo Sensor</span>
+                  <span>{t.privacyActive}</span>
                 </>
               ) : (
                 <>
                   <Eye className="h-3.5 w-3.5" />
-                  <span>Sensor Saldo</span>
+                  <span>{t.privacySensor}</span>
                 </>
               )}
             </button>
@@ -233,8 +295,8 @@ export function AppShell({
             {/* Dark/Light Switcher Button */}
             <button
               onClick={onToggleTheme}
-              className="flex items-center justify-center h-8 w-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-2xs"
-              title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+              className="flex items-center justify-center h-8 w-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-2xs cursor-pointer"
+              title={theme === 'dark' ? t.toggleThemeLight : t.toggleThemeDark}
             >
               {theme === 'dark' ? (
                 <Sun className="h-4 w-4 text-amber-400 animate-in fade-in" />
@@ -243,12 +305,20 @@ export function AppShell({
               )}
             </button>
 
-            {/* Quick Profile Initials */}
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-600 text-white text-xs font-bold shadow-xs">
-                NS
+            {/* Quick Profile / Settings Button */}
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800 cursor-pointer group"
+              title={t.profileSettings}
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-600 text-white text-xs font-bold shadow-xs group-hover:ring-2 group-hover:ring-indigo-500/50 transition-all">
+                {initials}
               </div>
-            </div>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition-colors">
+                {ownerName}
+              </span>
+            </button>
           </div>
         </div>
 
@@ -283,7 +353,7 @@ export function AppShell({
           <button
             onClick={onOpenTransactionModal}
             className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-indigo-700 text-white shadow-lg shadow-indigo-500/30 mx-1.5 transition-transform active:scale-95"
-            title="Catat Transaksi"
+            title={t.newTransaction}
           >
             <Plus className="h-5 w-5 stroke-[2.5]" />
           </button>
@@ -308,6 +378,17 @@ export function AppShell({
           })}
         </nav>
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        ownerName={ownerName}
+        ownerUsername={ownerUsername}
+        onSaveOwnerName={onSaveOwnerName}
+        language={language}
+        onSelectLanguage={onSelectLanguage}
+      />
     </div>
   );
 }

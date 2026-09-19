@@ -17,6 +17,7 @@ import { formatCompactRupiah, formatRupiah } from '@/lib/formatters';
 import { DynamicIcon } from '../ui/IconHelper';
 import { PieChart as PieIcon, BarChart3, Calendar, Sparkles, Printer, Download } from 'lucide-react';
 import { openAndPrintReport, downloadReportHtmlFile } from '@/lib/reportGenerator';
+import { Language, translations } from '@/lib/i18n';
 
 interface ExpenseChartsProps {
   trendData: TrendDataPoint[];
@@ -26,6 +27,8 @@ interface ExpenseChartsProps {
   onFilterChange: (filter: PeriodFilter) => void;
   isPrivacyMode?: boolean;
   summary?: FinancialSummary;
+  language?: Language;
+  ownerName?: string;
 }
 
 export function ExpenseCharts({
@@ -36,12 +39,16 @@ export function ExpenseCharts({
   onFilterChange,
   isPrivacyMode = false,
   summary,
+  language = 'id',
+  ownerName = 'Nova Suharyanto',
 }: ExpenseChartsProps) {
+  const t = translations[language];
+
   const filterButtons: { key: PeriodFilter; label: string }[] = [
-    { key: 'week', label: '7 Hari' },
-    { key: 'month', label: 'Bulan Ini' },
-    { key: 'year', label: 'Tahun Ini' },
-    { key: 'all', label: 'Semua' },
+    { key: 'week', label: t.filter7Days },
+    { key: 'month', label: t.filterMonth },
+    { key: 'year', label: t.filterYear },
+    { key: 'all', label: t.filterAll },
   ];
 
   return (
@@ -51,10 +58,10 @@ export function ExpenseCharts({
         <div>
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            <span>Analisis & Laporan Arus Kas</span>
+            <span>{t.analyticsTitle}</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Visualisasi pemasukan vs pengeluaran dan kategori belanja terbesar
+            {t.analyticsSubtitle}
           </p>
         </div>
 
@@ -64,18 +71,18 @@ export function ExpenseCharts({
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => openAndPrintReport({ summary, filter })}
+                onClick={() => openAndPrintReport({ summary, filter, userName: ownerName })}
                 className="inline-flex items-center gap-1.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-indigo-500/25 transition-all active:scale-95 cursor-pointer"
-                title="Buka laporan format HTML siap cetak / simpan PDF"
+                title={t.printReportBtn}
               >
                 <Printer className="h-3.5 w-3.5" />
-                <span>Cetak Laporan (.html)</span>
+                <span>{t.printReportBtn}</span>
               </button>
               <button
                 type="button"
-                onClick={() => downloadReportHtmlFile({ summary, filter })}
+                onClick={() => downloadReportHtmlFile({ summary, filter, userName: ownerName })}
                 className="inline-flex items-center justify-center h-8 w-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-2xs cursor-pointer"
-                title="Unduh berkas .html langsung ke komputer"
+                title={t.downloadHtmlBtn}
               >
                 <Download className="h-3.5 w-3.5" />
               </button>
@@ -88,7 +95,7 @@ export function ExpenseCharts({
               <button
                 key={fb.key}
                 onClick={() => onFilterChange(fb.key)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
+                className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
                   filter === fb.key
                     ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -111,21 +118,21 @@ export function ExpenseCharts({
               </div>
               <div>
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                  Perbandingan Pemasukan & Pengeluaran
+                  {t.cashflowTrend}
                 </h3>
                 <span className="text-[10px] text-slate-400">
-                  Arus uang masuk vs keluar harian / berkala
+                  {language === 'id' ? 'Arus uang masuk vs keluar harian / berkala' : 'Periodic inflow vs outflow records'}
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-3 text-[11px] font-semibold">
               <div className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                <span className="text-slate-600 dark:text-slate-300">Masuk</span>
+                <span className="text-slate-600 dark:text-slate-300">{t.filterIncome}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-rose-500" />
-                <span className="text-slate-600 dark:text-slate-300">Keluar</span>
+                <span className="text-slate-600 dark:text-slate-300">{t.filterExpense}</span>
               </div>
             </div>
           </div>
@@ -173,8 +180,8 @@ export function ExpenseCharts({
                     boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)',
                   }}
                 />
-                <Bar dataKey="income" name="Pemasukan" fill="url(#incomeGrad)" radius={[6, 6, 0, 0]} maxBarSize={24} />
-                <Bar dataKey="expense" name="Pengeluaran" fill="url(#expenseGrad)" radius={[6, 6, 0, 0]} maxBarSize={24} />
+                <Bar dataKey="income" name={t.filterIncome} fill="url(#incomeGrad)" radius={[6, 6, 0, 0]} maxBarSize={24} />
+                <Bar dataKey="expense" name={t.filterExpense} fill="url(#expenseGrad)" radius={[6, 6, 0, 0]} maxBarSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -189,10 +196,10 @@ export function ExpenseCharts({
               </div>
               <div>
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                  Kategori Pengeluaran Terbesar
+                  {t.topCategories}
                 </h3>
                 <span className="text-[10px] text-slate-400">
-                  Total: {isPrivacyMode ? 'Rp ••••••••' : formatRupiah(periodExpense)}
+                  {t.totalExpenseInPeriod} {isPrivacyMode ? 'Rp ••••••••' : formatRupiah(periodExpense)}
                 </span>
               </div>
             </div>
@@ -204,10 +211,12 @@ export function ExpenseCharts({
                 <Calendar className="h-6 w-6" />
               </div>
               <p className="mt-3 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                Belum ada pengeluaran pada periode ini
+                {t.noExpenseChart}
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Pengeluaran yang Anda catat akan otomatis dikelompokkan di sini.
+                {language === 'id'
+                  ? 'Pengeluaran yang Anda catat akan otomatis dikelompokkan di sini.'
+                  : 'Recorded expenses will automatically be categorized here.'}
               </p>
             </div>
           ) : (

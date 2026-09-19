@@ -10,8 +10,19 @@ import { TransactionModal } from '@/components/transactions/TransactionModal';
 import { FinancialSummary, PeriodFilter } from '@/lib/types';
 import { getFinancialSummaryAction } from './actions/finance';
 import { formatDateWithDay } from '@/lib/formatters';
-import { Sparkles, Loader2, Wallet, ArrowRight, ShieldCheck, PieChart, ArrowLeftRight, Printer, Download } from 'lucide-react';
+import {
+  Sparkles,
+  Loader2,
+  Wallet,
+  ArrowRight,
+  ShieldCheck,
+  PieChart,
+  ArrowLeftRight,
+  Printer,
+  Download,
+} from 'lucide-react';
 import { openAndPrintReport, downloadReportHtmlFile } from '@/lib/reportGenerator';
+import { Language, translations } from '@/lib/i18n';
 
 export default function Home() {
   const [data, setData] = useState<FinancialSummary | null>(null);
@@ -22,12 +33,32 @@ export default function Home() {
   const [isPrivacyMode, setIsPrivacyMode] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
-  // Load theme and privacy preferences on client mount
+  // Language & Owner Profile State
+  const [language, setLanguage] = useState<Language>('id');
+  const [ownerName, setOwnerName] = useState<string>('Nova Suharyanto');
+  const [ownerUsername, setOwnerUsername] = useState<string>('kangnova');
+
+  // Load preferences from localStorage on client mount
   useEffect(() => {
     try {
       const storedPrivacy = localStorage.getItem('finansialku-privacy');
       if (storedPrivacy === 'true') {
         setIsPrivacyMode(true);
+      }
+
+      const storedLang = localStorage.getItem('finansialku-lang') as Language;
+      if (storedLang === 'id' || storedLang === 'en') {
+        setLanguage(storedLang);
+      }
+
+      const storedName = localStorage.getItem('finansialku-owner-name');
+      if (storedName) {
+        setOwnerName(storedName);
+      }
+
+      const storedUsername = localStorage.getItem('finansialku-owner-username');
+      if (storedUsername) {
+        setOwnerUsername(storedUsername);
       }
 
       const storedTheme = localStorage.getItem('finansialku-theme');
@@ -72,6 +103,32 @@ export default function Home() {
     });
   };
 
+  const handleToggleLanguage = () => {
+    setLanguage((prev) => {
+      const next = prev === 'id' ? 'en' : 'id';
+      try {
+        localStorage.setItem('finansialku-lang', next);
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const handleSelectLanguage = (newLang: Language) => {
+    setLanguage(newLang);
+    try {
+      localStorage.setItem('finansialku-lang', newLang);
+    } catch (e) {}
+  };
+
+  const handleSaveOwnerName = (name: string, username: string) => {
+    setOwnerName(name);
+    setOwnerUsername(username);
+    try {
+      localStorage.setItem('finansialku-owner-name', name);
+      localStorage.setItem('finansialku-owner-username', username);
+    } catch (e) {}
+  };
+
   const loadData = useCallback(async (currentFilter: PeriodFilter) => {
     try {
       setLoading(true);
@@ -96,6 +153,8 @@ export default function Home() {
     loadData(filter);
   };
 
+  const t = translations[language];
+
   return (
     <AppShell
       activeTab={activeTab}
@@ -106,6 +165,12 @@ export default function Home() {
       onTogglePrivacyMode={handleTogglePrivacyMode}
       theme={theme}
       onToggleTheme={handleToggleTheme}
+      language={language}
+      onSelectLanguage={handleSelectLanguage}
+      onToggleLanguage={handleToggleLanguage}
+      ownerName={ownerName}
+      ownerUsername={ownerUsername}
+      onSaveOwnerName={handleSaveOwnerName}
     >
       {/* Top Banner Greeting */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -117,10 +182,10 @@ export default function Home() {
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-            Ringkasan Keuangan Pribadi
+            {t.greetingTitle}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Pantau arus kas masuk, pengeluaran harian, dan saldo tersimpan Anda secara real-time
+            {t.greetingSubtitle}
           </p>
         </div>
 
@@ -129,19 +194,19 @@ export default function Home() {
           <div className="hidden sm:flex items-center gap-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 p-2.5 px-4 shadow-sm backdrop-blur-md">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                Total Kantong Aktif
+                {t.activeWallets}
               </span>
               <p className="text-sm font-black text-slate-900 dark:text-white font-mono">
-                {data.accounts.length} Akun Terdaftar
+                {data.accounts.length} {t.registeredAccounts}
               </p>
             </div>
             <div className="h-7 w-px bg-slate-200 dark:bg-slate-800" />
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                Total Mutasi
+                {t.totalMutations}
               </span>
               <p className="text-sm font-black text-slate-900 dark:text-white font-mono">
-                {data.recentTransactions.length} Transaksi
+                {data.recentTransactions.length} {t.transactionsCount}
               </p>
             </div>
           </div>
@@ -151,7 +216,7 @@ export default function Home() {
       {loading && !data ? (
         <div className="flex h-64 flex-col items-center justify-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-          <span className="text-xs font-medium text-slate-400">Memuat data keuangan...</span>
+          <span className="text-xs font-medium text-slate-400">{t.loadingData}</span>
         </div>
       ) : data ? (
         <div className="space-y-6">
@@ -167,6 +232,8 @@ export default function Home() {
                 filter={filter}
                 isPrivacyMode={isPrivacyMode}
                 onTogglePrivacyMode={handleTogglePrivacyMode}
+                language={language}
+                ownerName={ownerName}
               />
 
               {/* Accounts: Where is the money stored? */}
@@ -174,9 +241,10 @@ export default function Home() {
                 accounts={data.accounts}
                 onRefresh={handleRefresh}
                 isPrivacyMode={isPrivacyMode}
+                language={language}
               />
 
-              {/* Analytics: Trends and Category Breakdown (Where did money go?) */}
+              {/* Analytics: Trends and Category Breakdown */}
               <ExpenseCharts
                 trendData={data.trendData}
                 categoryBreakdown={data.categoryBreakdown}
@@ -185,6 +253,8 @@ export default function Home() {
                 onFilterChange={handleFilterChange}
                 isPrivacyMode={isPrivacyMode}
                 summary={data}
+                language={language}
+                ownerName={ownerName}
               />
 
               {/* Transaction History */}
@@ -192,6 +262,7 @@ export default function Home() {
                 transactions={data.recentTransactions}
                 onRefresh={handleRefresh}
                 isPrivacyMode={isPrivacyMode}
+                language={language}
               />
             </>
           )}
@@ -202,13 +273,13 @@ export default function Home() {
               <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-700 via-blue-600 to-indigo-800 p-6 text-white shadow-xl shadow-indigo-600/20">
                 <div className="relative z-10">
                   <span className="rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-100">
-                    Manajemen Kantong Dana
+                    {t.accounts}
                   </span>
                   <h2 className="text-xl sm:text-2xl font-black mt-2">
-                    Kelola Rekening Bank, Dompet Fisik, & E-Wallet
+                    {t.bannerWalletsTitle}
                   </h2>
                   <p className="mt-1 text-xs text-indigo-100/80 max-w-xl">
-                    Semua saldo tercatat terpisah per pos keuangan untuk memudahkan pengawasan arus kas Anda sehari-hari.
+                    {t.bannerWalletsSubtitle}
                   </p>
                 </div>
                 <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
@@ -218,6 +289,7 @@ export default function Home() {
                 accounts={data.accounts}
                 onRefresh={handleRefresh}
                 isPrivacyMode={isPrivacyMode}
+                language={language}
               />
             </div>
           )}
@@ -228,13 +300,13 @@ export default function Home() {
               <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-800 p-6 text-white shadow-xl shadow-emerald-600/20">
                 <div className="relative z-10">
                   <span className="rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-100">
-                    Buku Kas Harian
+                    {t.transactions}
                   </span>
                   <h2 className="text-xl sm:text-2xl font-black mt-2">
-                    Riwayat Seluruh Mutasi Dana
+                    {t.bannerTxTitle}
                   </h2>
                   <p className="mt-1 text-xs text-emerald-100/80 max-w-xl">
-                    Pantau jejak pemasukan, pembelanjaan barang/jasa, serta mutasi transfer antar rekening Anda secara kronologis.
+                    {t.bannerTxSubtitle}
                   </p>
                 </div>
                 <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
@@ -244,6 +316,7 @@ export default function Home() {
                 transactions={data.recentTransactions}
                 onRefresh={handleRefresh}
                 isPrivacyMode={isPrivacyMode}
+                language={language}
               />
             </div>
           )}
@@ -257,30 +330,30 @@ export default function Home() {
                     Financial Intelligence & Reporting
                   </span>
                   <h2 className="text-xl sm:text-2xl font-black mt-2">
-                    Laporan Keuangan & Rekap Mutasi
+                    {t.bannerReportsTitle}
                   </h2>
                   <p className="mt-1 text-xs text-purple-100/80 max-w-xl">
-                    Evaluasi arus kas dan cetak laporan resmi pemasukan & pengeluaran dalam format berkas .html atau cetak langsung ke PDF.
+                    {t.bannerReportsSubtitle}
                   </p>
                 </div>
 
                 <div className="relative z-10 flex items-center gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={() => openAndPrintReport({ summary: data, filter })}
+                    onClick={() => openAndPrintReport({ summary: data, filter, userName: ownerName })}
                     className="inline-flex items-center gap-2 rounded-2xl bg-white text-slate-900 hover:bg-purple-50 px-4 py-2.5 text-xs font-bold shadow-lg shadow-black/10 transition-all active:scale-95 cursor-pointer"
                   >
                     <Printer className="h-4 w-4 text-purple-600" />
-                    <span>Cetak Laporan (.html)</span>
+                    <span>{t.printReportBtn}</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => downloadReportHtmlFile({ summary: data, filter })}
+                    onClick={() => downloadReportHtmlFile({ summary: data, filter, userName: ownerName })}
                     className="inline-flex items-center gap-1.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white px-3.5 py-2.5 text-xs font-bold border border-white/20 transition-all active:scale-95 cursor-pointer"
-                    title="Unduh Berkas .html"
+                    title={t.downloadHtmlBtn}
                   >
                     <Download className="h-4 w-4" />
-                    <span className="hidden sm:inline">Unduh .html</span>
+                    <span className="hidden sm:inline">{t.downloadHtmlBtn}</span>
                   </button>
                 </div>
 
@@ -295,6 +368,8 @@ export default function Home() {
                 onFilterChange={handleFilterChange}
                 isPrivacyMode={isPrivacyMode}
                 summary={data}
+                language={language}
+                ownerName={ownerName}
               />
             </div>
           )}

@@ -22,21 +22,15 @@ import {
   deleteAccountAction,
   resetFinancialDataAction,
 } from '@/app/actions/finance';
+import { Language, translations } from '@/lib/i18n';
 
 interface AccountCardListProps {
   accounts: Account[];
   onSelectAccount?: (account: Account) => void;
   onRefresh: () => void;
   isPrivacyMode?: boolean;
+  language?: Language;
 }
-
-const TYPE_LABELS: Record<AccountType, string> = {
-  BANK: 'Bank',
-  CASH: 'Tunai',
-  EWALLET: 'E-Wallet',
-  INVESTMENT: 'Investasi',
-  OTHER: 'Lainnya',
-};
 
 const PRESET_ACCOUNTS = [
   { name: 'Bank BCA', type: 'BANK' as AccountType, color: '#00529B', icon: 'building-2' },
@@ -49,7 +43,22 @@ const PRESET_ACCOUNTS = [
   { name: 'Bibit / Reksa Dana', type: 'INVESTMENT' as AccountType, color: '#F59E0B', icon: 'trending-up' },
 ];
 
-export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: AccountCardListProps) {
+export function AccountCardList({
+  accounts,
+  onRefresh,
+  isPrivacyMode = false,
+  language = 'id',
+}: AccountCardListProps) {
+  const t = translations[language];
+
+  const typeLabels: Record<AccountType, string> = {
+    BANK: t.typeBank,
+    CASH: t.typeCash,
+    EWALLET: t.typeEwallet,
+    INVESTMENT: t.typeInvestment,
+    OTHER: t.typeOther,
+  };
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
@@ -155,7 +164,9 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
 
   const handleDeleteAccount = async (acc: Account) => {
     const ok = window.confirm(
-      `Apakah Anda yakin ingin menghapus kantong "${acc.name}"? Saldo dan transaksi yang berkaitan dengan kantong ini akan dihapus.`
+      language === 'id'
+        ? `Apakah Anda yakin ingin menghapus kantong "${acc.name}"? Saldo dan transaksi yang berkaitan dengan kantong ini akan dihapus.`
+        : `Are you sure you want to delete wallet "${acc.name}"? All associated balances and transactions will be removed.`
     );
     if (!ok) return;
 
@@ -165,7 +176,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
       onRefresh();
     } catch (err) {
       console.error('Failed to delete account:', err);
-      alert('Gagal menghapus kantong dana.');
+      alert(language === 'id' ? 'Gagal menghapus kantong dana.' : 'Failed to delete wallet.');
     } finally {
       setDeletingId(null);
     }
@@ -179,7 +190,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
       onRefresh();
     } catch (err) {
       console.error('Failed to reset financial data:', err);
-      alert('Gagal mereset data keuangan.');
+      alert(language === 'id' ? 'Gagal mereset data keuangan.' : 'Failed to reset financial data.');
     } finally {
       setIsResetting(false);
     }
@@ -192,10 +203,12 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
         <div>
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Landmark className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            <span>Kantong Dana Tersimpan</span>
+            <span>{t.walletsTitle}</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Sebaran dana di {accounts.length} rekening, dompet fisik, & e-wallet
+            {language === 'id'
+              ? `Sebaran dana di ${accounts.length} rekening, dompet fisik, & e-wallet`
+              : `Distribution of funds across ${accounts.length} bank accounts, wallets, & investments`}
           </p>
         </div>
 
@@ -205,10 +218,10 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
             type="button"
             onClick={() => setIsResetConfirmOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200/60 dark:border-rose-800/60 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 transition-all active:scale-95 cursor-pointer"
-            title="Nol-kan semua saldo dan hapus seluruh riwayat transaksi"
+            title={t.resetDataBtn}
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span>Reset Data (0-kan Semua)</span>
+            <span>{t.resetDataBtn}</span>
           </button>
 
           {/* Add Account Button */}
@@ -217,7 +230,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
             className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 border border-indigo-200/60 dark:border-indigo-800/60 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 transition-all active:scale-95 cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
-            <span>Tambah Kantong</span>
+            <span>{t.addWallet}</span>
           </button>
         </div>
       </div>
@@ -247,8 +260,8 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(acc)}
-                        className="rounded-lg p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition-colors"
-                        title="Edit Kantong Dana"
+                        className="rounded-lg p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition-colors cursor-pointer"
+                        title={t.editWallet}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -256,8 +269,8 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                         type="button"
                         disabled={deletingId === acc.id}
                         onClick={() => handleDeleteAccount(acc)}
-                        className="rounded-lg p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors disabled:opacity-50"
-                        title="Hapus Kantong Dana"
+                        className="rounded-lg p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors disabled:opacity-50 cursor-pointer"
+                        title={t.deleteWallet}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -265,7 +278,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
 
                     <div className="flex items-center gap-1">
                       <span className="rounded-lg bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                        {TYPE_LABELS[acc.type] || acc.type}
+                        {typeLabels[acc.type] || acc.type}
                       </span>
                       <span className="text-[10px] font-medium text-slate-400 font-mono">
                         {percentage}%
@@ -280,7 +293,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                     {acc.name}
                   </h3>
                   <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                    {acc.accountNumber ? `•••• ${acc.accountNumber.slice(-4)}` : 'Kantong Standar'}
+                    {acc.accountNumber ? `•••• ${acc.accountNumber.slice(-4)}` : t.standardWallet}
                   </p>
                 </div>
               </div>
@@ -321,14 +334,14 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                    Edit Kantong Dana
+                    {t.editWallet}
                   </h3>
-                  <p className="text-[11px] text-slate-400">Sesuaikan nama, saldo, atau warna kantong</p>
+                  <p className="text-[11px] text-slate-400">{t.editWalletSubtitle}</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -337,12 +350,12 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
             <form onSubmit={handleUpdateAccount} className="mt-4 space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Nama Akun / Dompet
+                  {t.walletName}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Misal: Bank BCA, Dompet Tunai..."
+                  placeholder={t.walletNamePlaceholder}
                   value={editFormData.name}
                   onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -352,31 +365,31 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Tipe Kantong
+                    {t.walletType}
                   </label>
                   <select
                     value={editFormData.type}
                     onChange={(e) => {
-                      const t = e.target.value as AccountType;
+                      const selectedT = e.target.value as AccountType;
                       let icon = 'wallet';
-                      if (t === 'BANK') icon = 'building-2';
-                      if (t === 'EWALLET') icon = 'smartphone';
-                      if (t === 'INVESTMENT') icon = 'trending-up';
-                      setEditFormData({ ...editFormData, type: t, icon });
+                      if (selectedT === 'BANK') icon = 'building-2';
+                      if (selectedT === 'EWALLET') icon = 'smartphone';
+                      if (selectedT === 'INVESTMENT') icon = 'trending-up';
+                      setEditFormData({ ...editFormData, type: selectedT, icon });
                     }}
                     className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="BANK">Rekening Bank</option>
-                    <option value="CASH">Dompet Tunai</option>
-                    <option value="EWALLET">E-Wallet (GoPay/OVO)</option>
-                    <option value="INVESTMENT">Investasi (Reksadana/Saham)</option>
-                    <option value="OTHER">Lainnya</option>
+                    <option value="BANK">{t.typeBank}</option>
+                    <option value="CASH">{t.typeCash}</option>
+                    <option value="EWALLET">{t.typeEwallet}</option>
+                    <option value="INVESTMENT">{t.typeInvestment}</option>
+                    <option value="OTHER">{t.typeOther}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Warna Label
+                    {t.walletColor}
                   </label>
                   <div className="mt-1 flex items-center gap-2">
                     <input
@@ -392,11 +405,11 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Nomor Rekening / Catatan Nomor (Opsional)
+                  {t.accountNumber}
                 </label>
                 <input
                   type="text"
-                  placeholder="Misal: 5410xxxx (atau nomor HP e-wallet)"
+                  placeholder={t.accountNumberPlaceholder}
                   value={editFormData.accountNumber}
                   onChange={(e) => setEditFormData({ ...editFormData, accountNumber: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -405,7 +418,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Saldo Saat Ini (Rp)
+                  {t.currentBalance}
                 </label>
                 <input
                   type="number"
@@ -415,7 +428,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                   className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <p className="mt-1 text-[10px] text-slate-400">
-                  Ubah nominal ini jika ingin menyesuaikan total saldo aktual kantong Anda.
+                  {t.currentBalanceHelp}
                 </p>
               </div>
 
@@ -423,16 +436,16 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  Batal
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 transition-all disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  {isSubmitting ? 'Menyimpan...' : 'Perbarui Kantong'}
+                  {isSubmitting ? t.savingState : t.updateWallet}
                 </button>
               </div>
             </form>
@@ -451,14 +464,14 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                    Tambah Kantong Dana Baru
+                    {t.addWallet}
                   </h3>
-                  <p className="text-[11px] text-slate-400">Rekening bank, tunai, atau dompet digital</p>
+                  <p className="text-[11px] text-slate-400">{t.walletsSubtitle}</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -467,7 +480,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
             {/* Quick Presets */}
             <div className="mt-4">
               <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                Pilih Cepat (Preset Bank & Dompet):
+                {t.quickPreset}
               </span>
               <div className="flex flex-wrap gap-1.5 mt-1.5">
                 {PRESET_ACCOUNTS.map((preset) => (
@@ -475,7 +488,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                     key={preset.name}
                     type="button"
                     onClick={() => handleSelectPreset(preset)}
-                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-2 py-1 text-[10px] font-semibold text-slate-700 dark:text-slate-300 hover:border-indigo-500 hover:text-indigo-600 transition-colors"
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-2 py-1 text-[10px] font-semibold text-slate-700 dark:text-slate-300 hover:border-indigo-500 hover:text-indigo-600 transition-colors cursor-pointer"
                   >
                     {preset.name}
                   </button>
@@ -486,12 +499,12 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
             <form onSubmit={handleCreateAccount} className="mt-4 space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Nama Akun / Dompet
+                  {t.walletName}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Misal: Bank BCA, Dompet Tunai..."
+                  placeholder={t.walletNamePlaceholder}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -501,31 +514,31 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Tipe Kantong
+                    {t.walletType}
                   </label>
                   <select
                     value={formData.type}
                     onChange={(e) => {
-                      const t = e.target.value as AccountType;
+                      const selectedT = e.target.value as AccountType;
                       let icon = 'wallet';
-                      if (t === 'BANK') icon = 'building-2';
-                      if (t === 'EWALLET') icon = 'smartphone';
-                      if (t === 'INVESTMENT') icon = 'trending-up';
-                      setFormData({ ...formData, type: t, icon });
+                      if (selectedT === 'BANK') icon = 'building-2';
+                      if (selectedT === 'EWALLET') icon = 'smartphone';
+                      if (selectedT === 'INVESTMENT') icon = 'trending-up';
+                      setFormData({ ...formData, type: selectedT, icon });
                     }}
                     className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="BANK">Rekening Bank</option>
-                    <option value="CASH">Dompet Tunai</option>
-                    <option value="EWALLET">E-Wallet (GoPay/OVO)</option>
-                    <option value="INVESTMENT">Investasi (Reksadana/Saham)</option>
-                    <option value="OTHER">Lainnya</option>
+                    <option value="BANK">{t.typeBank}</option>
+                    <option value="CASH">{t.typeCash}</option>
+                    <option value="EWALLET">{t.typeEwallet}</option>
+                    <option value="INVESTMENT">{t.typeInvestment}</option>
+                    <option value="OTHER">{t.typeOther}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Warna Label
+                    {t.walletColor}
                   </label>
                   <div className="mt-1 flex items-center gap-2">
                     <input
@@ -541,11 +554,11 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Nomor Rekening / Catatan Nomor (Opsional)
+                  {t.accountNumber}
                 </label>
                 <input
                   type="text"
-                  placeholder="Misal: 5410xxxx (atau nomor HP e-wallet)"
+                  placeholder={t.accountNumberPlaceholder}
                   value={formData.accountNumber}
                   onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -554,7 +567,7 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Saldo Awal (Rp)
+                  {t.initialBalance}
                 </label>
                 <input
                   type="number"
@@ -569,16 +582,16 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  Batal
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 transition-all disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-500/25 transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  {isSubmitting ? 'Menyimpan...' : 'Simpan Kantong'}
+                  {isSubmitting ? t.savingState : t.saveWallet}
                 </button>
               </div>
             </form>
@@ -596,20 +609,20 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
               </div>
               <div>
                 <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                  Reset Data Keuangan?
+                  {t.resetModalTitle}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Tindakan ini akan mengosongkan seluruh histori
+                  {t.resetModalSubtitle}
                 </p>
               </div>
             </div>
 
             <div className="mt-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/40 p-4 text-xs text-rose-900 dark:text-rose-200 space-y-2">
-              <p className="font-semibold">Perhatian:</p>
+              <p className="font-semibold">{t.resetWarningTitle}</p>
               <ul className="list-disc pl-4 space-y-1 text-slate-600 dark:text-slate-300">
-                <li>Seluruh riwayat mutasi transaksi akan dihapus bersih (0 transaksi).</li>
-                <li>Semua saldo kantong dana akan diatur ulang menjadi <strong>Rp 0</strong>.</li>
-                <li>Daftar kantong dan kategori Anda tetap dipertahankan agar siap diisi transaksi baru Anda.</li>
+                <li>{t.resetWarning1}</li>
+                <li>{t.resetWarning2}</li>
+                <li>{t.resetWarning3}</li>
               </ul>
             </div>
 
@@ -618,18 +631,18 @@ export function AccountCardList({ accounts, onRefresh, isPrivacyMode = false }: 
                 type="button"
                 disabled={isResetting}
                 onClick={() => setIsResetConfirmOpen(false)}
-                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 cursor-pointer"
               >
-                Batal
+                {t.cancel}
               </button>
               <button
                 type="button"
                 disabled={isResetting}
                 onClick={handleResetAllData}
-                className="flex-1 rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-bold text-white shadow-md shadow-rose-600/25 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="flex-1 rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-bold text-white shadow-md shadow-rose-600/25 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <RotateCcw className={`h-3.5 w-3.5 ${isResetting ? 'animate-spin' : ''}`} />
-                <span>{isResetting ? 'Mereset Data...' : 'Ya, Reset ke Rp 0'}</span>
+                <span>{isResetting ? t.resettingState : t.resetConfirmBtn}</span>
               </button>
             </div>
           </div>

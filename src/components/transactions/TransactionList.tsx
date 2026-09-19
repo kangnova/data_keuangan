@@ -16,32 +16,40 @@ import {
   Tag,
 } from 'lucide-react';
 import { deleteTransactionAction } from '@/app/actions/finance';
+import { Language, translations } from '@/lib/i18n';
 
 interface TransactionListProps {
   transactions: Transaction[];
   onRefresh: () => void;
   isPrivacyMode?: boolean;
+  language?: Language;
 }
 
-export function TransactionList({ transactions, onRefresh, isPrivacyMode = false }: TransactionListProps) {
+export function TransactionList({
+  transactions,
+  onRefresh,
+  isPrivacyMode = false,
+  language = 'id',
+}: TransactionListProps) {
+  const t = translations[language];
   const [filterType, setFilterType] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const filtered = transactions.filter((t) => {
-    if (filterType !== 'ALL' && t.type !== filterType) return false;
+  const filtered = transactions.filter((item) => {
+    if (filterType !== 'ALL' && item.type !== filterType) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const matchNote = t.notes?.toLowerCase().includes(q);
-      const matchCat = t.category?.name.toLowerCase().includes(q);
-      const matchAcc = t.account?.name.toLowerCase().includes(q);
+      const matchNote = item.notes?.toLowerCase().includes(q);
+      const matchCat = item.category?.name.toLowerCase().includes(q);
+      const matchAcc = item.account?.name.toLowerCase().includes(q);
       return matchNote || matchCat || matchAcc;
     }
     return true;
   });
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini? Saldo kantong dana akan otomatis disesuaikan kembali.')) {
+    if (!confirm(t.deleteTxConfirm)) {
       return;
     }
     setDeletingId(id);
@@ -62,10 +70,10 @@ export function TransactionList({ transactions, onRefresh, isPrivacyMode = false
         <div>
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <History className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            <span>Riwayat Mutasi Transaksi</span>
+            <span>{t.txHistoryTitle}</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Daftar pengeluaran belanja, pemasukan, dan transfer antar kantong
+            {t.txHistorySubtitle}
           </p>
         </div>
 
@@ -76,7 +84,7 @@ export function TransactionList({ transactions, onRefresh, isPrivacyMode = false
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari transaksi, catatan..."
+              placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 py-2 pl-9 pr-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs backdrop-blur-xs"
@@ -86,15 +94,15 @@ export function TransactionList({ transactions, onRefresh, isPrivacyMode = false
           {/* Type Filter Buttons */}
           <div className="inline-flex rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 p-1 border border-slate-200/60 dark:border-slate-700/50">
             {[
-              { key: 'ALL', label: 'Semua' },
-              { key: 'EXPENSE', label: 'Keluar' },
-              { key: 'INCOME', label: 'Masuk' },
-              { key: 'TRANSFER', label: 'Transfer' },
+              { key: 'ALL', label: t.filterAllTypes },
+              { key: 'EXPENSE', label: t.filterExpense },
+              { key: 'INCOME', label: t.filterIncome },
+              { key: 'TRANSFER', label: t.filterTransfer },
             ].map((f) => (
               <button
                 key={f.key}
                 onClick={() => setFilterType(f.key)}
-                className={`rounded-xl px-2.5 py-1 text-[11px] font-bold transition-all duration-200 ${
+                className={`rounded-xl px-2.5 py-1 text-[11px] font-bold transition-all duration-200 cursor-pointer ${
                   filterType === f.key
                     ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
